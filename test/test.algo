@@ -1,0 +1,22 @@
+VARIABLE
+    current_year: Entier
+    name: Texte
+
+DEBUT
+    current_year <- 2022
+    AFFICHER "Quel est ton nom ? "
+    LIRE name
+
+    TANTQUE current_year > 2020 FAIRE
+        current_year <- current_year - 1
+    FIN TANT QUE
+    AFFICHER current_year
+
+    POUR i <- 1,10 FAIRE
+        AFFICHER i
+    FINPOUR
+
+    pour i <- 1, current_year faire
+        AFFICHER i*2
+    fin pour
+FIN
