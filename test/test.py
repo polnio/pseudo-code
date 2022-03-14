@@ -1,5 +1,6 @@
 current_year=2022
 name=input("Quel est ton nom ? ")
+print("Bonjour "+ name +" !")
 while current_year > 2020:
   current_year=current_year - 1
 print(current_year)
