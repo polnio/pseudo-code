@@ -9,6 +9,8 @@ string const validLines[] = {
     "AFFICHER +(.+)",
     "LIRE +(.+)",
     "^ *(?!POUR)([^ ]+) *<- *(.+)",
+    "SI +(.+[^ ]) +ALORS",
+    "FIN ?SI",
     "TANT ?QUE +(.+[^ ]) +FAIRE",
     "FIN ?TANT ?QUE",
     "R[EÉ]P[EÉ]TER",
@@ -16,8 +18,16 @@ string const validLines[] = {
     "POUR *([^ ]+) *<- *([^ ,]+) *, *([^ ]+) +FAIRE",
     "FIN ?POUR"
 };
-map<string, string> variables;
+enum OutLines {Afficher, Lire, Arrow, IfStatement, EndIf, WhileLoop, EndWhileLoop, DoWhileLoop, EndDoWhileLoop, ForLoop, EndForLoop};
+const string regValidTypes = "Bool(?:ean)?|Texte?|Entier|R[ée]el";
+map<string, string> variables = {
+    {"true", "Boolean"},
+    {"false", "Boolean"},
+};
 int noline = 0;
+smatch sm;
+const auto regLogic = regex("^(.*[^ ]) *(?:OU|\\|\\||ET|&&|==) *([^ ].*$)", regex_constants::icase);
+
 
 void showError (string const error) {
     cerr << "Error l." << noline << ": " << error << endl;
@@ -50,20 +60,25 @@ bool checkVariableExist (string var) {
     return true;
 }
 
-bool testVariableText (string const text) {
-    // cout << r << endl;
-    smatch sm;
-    constexpr const char* delimiters = "+-=><*/";
+bool checkVariable (string const text) {
+    // cout << text << endl;
+    smatch _sm;
+    constexpr const char* delimiters = "+-><*/";
     char* tokenValue = strtok((char*)text.c_str(), delimiters);
     while (tokenValue != NULL) {
         string textVar = tokenValue;
         tokenValue = strtok(NULL, delimiters);
-        if (regex_search(textVar, sm, regex("^ *\"([^\"]*)\" *$"))) {
-
+        if (regex_search(textVar, _sm, regex("^ *\"([^\"]*)\" *$"))) {
         } else {
-            string const var = trimString(textVar, " ");
-            if (regex_match(var, regex("^[0-9]+$"))) continue;
+            const string var = trimString(textVar, " ");
+            // cout << var << endl;
+            if (regex_match(var, regex("^[0-9]+$"))) return true;
+            if (regex_search(var, _sm, regLogic)) {
+                if (!checkVariable(_sm[2])) return false;
+                return checkVariable(_sm[1]);
+            }
             if (!checkVariableExist(var)) return false;
+            return true;
         }
     }
     return true;
@@ -82,11 +97,9 @@ int main (int argc, char const *argv[]) {
     int opt = 0;
     string const outputFileName = getCmdOption(argv, argv+argc, "-o");
     short indentSize = stoi(getCmdOption(argv, argv+argc, "-indent"));
-    enum OutLines {Afficher, Lire, Arrow, WhileLoop, EndWhileLoop, DoWhileLoop, EndDoWhileLoop, ForLoop, EndForLoop};
     ifstream inputFile; inputFile.open(argv[1]);
     ofstream outputFile; outputFile.open(outputFileName);
     string line;
-    smatch sm;
     string tempWrite = "";
 
     bool isWriting = false;
@@ -102,7 +115,7 @@ int main (int argc, char const *argv[]) {
 
             if (!started) {
                 if (!variablesDefining) {
-                    if (regex_search(line, sm, regex("VARIABLES?", regex_constants::icase))) {
+                    if (regex_match(line, regex("VARIABLES?", regex_constants::icase))) {
                         variablesDefining = true;
                     }
                 } else {
@@ -124,6 +137,7 @@ int main (int argc, char const *argv[]) {
                 isWriting = false;
                 outputFile << string(indent*indentSize, ' ');
                 if (regex_search(line, sm, regex("LIRE *(.+)", regex_constants::icase))) {
+                    // cout << tempWrite << endl;
                     if (!checkReading(sm[1])) exit(1);
                     outputFile << sm[1] << "=input(" << tempWrite << ")" << endl;
                     continue;
@@ -134,10 +148,12 @@ int main (int argc, char const *argv[]) {
 
             for (int i = 0; i < sizeof(validLines)/sizeof(validLines[0]); i++) {
                 // cout << validLines[i] << endl;
-                if ( regex_search(line, sm, regex(validLines[i], regex_constants::icase))) {
+                if (regex_search(line, sm, regex(validLines[i], regex_constants::icase))) {
+                    // cout << i << endl;
                     switch (i) {
                     case Afficher:
-                        if (!testVariableText(sm[1])) exit(1);
+                        // cout << sm[1] << endl;
+                        if (!checkVariable(sm[1])) exit(1);
                         tempWrite = sm[1];
                         isWriting = true;
                         break;
@@ -154,8 +170,17 @@ int main (int argc, char const *argv[]) {
                         outputFile << sm[1] << "=" << sm[2] << endl;
                         break;
 
+                    case IfStatement:
+                        // cout << "1" << endl;
+                        if (!checkVariable(sm[1])) exit(1);
+                        // cout << "2" << endl;
+                        outputFile << string(indent*indentSize, ' ');
+                        outputFile << "if " << sm[1] << ":" << endl;
+                        indent += 1;
+                        break;
+
                     case WhileLoop:
-                        if (!testVariableText(sm[1])) exit(1);
+                        if (!checkVariable(sm[1])) exit(1);
                         outputFile << string(indent*indentSize, ' ');
                         outputFile << "while " << sm[1] << ":" << endl;
                         indent += 1;
@@ -168,8 +193,8 @@ int main (int argc, char const *argv[]) {
                         
                     case ForLoop:
                         {
-                            if (!testVariableText(sm[1])) exit(1);
-                            if (!testVariableText(sm[2])) exit(1);
+                            if (!checkVariable(sm[1])) exit(1);
+                            if (!checkVariable(sm[2])) exit(1);
                             bool toIsNum = false; try { stoi(sm[3]); toIsNum = true; } catch (invalid_argument e) {}
                             outputFile << string(indent*indentSize, ' ');
                             outputFile << "for " << sm[1] << " in range(" << sm[2] << "," << (toIsNum ? to_string(stoi(sm[3])+1) : string(sm[3])+"+1") << "):" << endl;
@@ -177,6 +202,7 @@ int main (int argc, char const *argv[]) {
                         }
                         break;
 
+                    case EndIf:
                     case EndWhileLoop:
                     case EndForLoop:
                         indent -= 1;
