@@ -8,7 +8,7 @@ DEBUT
     LIRE name
     AFFICHER "Bonjour "+ name +" !"
 
-    SI name == "Po Co" OU false OU name == "polnio" ALORS
+    SI name == "Po Co" OU False OU name == "polnio" ALORS
         AFFICHER "Bienvenue a l'admin "+ name
     FIN SI
 

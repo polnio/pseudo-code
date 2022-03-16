@@ -20,17 +20,18 @@ string const validLines[] = {
 };
 enum OutLines {Afficher, Lire, Arrow, IfStatement, EndIf, WhileLoop, EndWhileLoop, DoWhileLoop, EndDoWhileLoop, ForLoop, EndForLoop};
 const string regValidTypes = "Bool(?:ean)?|Texte?|Entier|R[ée]el";
-map<string, string> variables = {
-    {"true", "Boolean"},
-    {"false", "Boolean"},
-};
+map<string, string> variables;
+string integratedVars[] = {"true", "false"};
 int noline = 0;
 smatch sm;
-const auto regLogic = regex("^(.*[^ ]) *(?:OU|\\|\\||ET|&&|==) *([^ ].*$)", regex_constants::icase);
+const string regLogic = "OU|\\|\\||ET|&&|==";
+const string logics[] = {"OU","||","ET","&&","=="};
+enum logicsEnum {OU, OUSYM, ET, ETSYM, EQEQ};
 
 
 void showError (string const error) {
     cerr << "Error l." << noline << ": " << error << endl;
+    exit(1);
 }
 
 char* getCmdOption (const char** begin, const char** end, const string& option) {
@@ -48,11 +49,24 @@ string trimString(string str, string chars) {
     return str;
 }
 
+bool replace (string& str, const string& from, const string& to) {
+    size_t start_pos = str.find(from);
+    if (start_pos == string::npos) return false;
+    str.replace(start_pos, from.length(), to);
+    return true;
+}
+
 void split_str (string const &str, const char delimiter, vector<string> &out) {
     stringstream s(str); string s2; while (getline(s, s2, delimiter)) out.push_back(s2);
 }
 
 bool checkVariableExist (string var) {
+    for (size_t i = 0; i < sizeof(integratedVars)/sizeof(integratedVars[0]); i++){
+        string tempVar = var;
+        transform(tempVar.begin(), tempVar.end(), tempVar.begin(), ::tolower);
+        if (tempVar == integratedVars[i]) return true;
+    }
+    
     if (variables.count(var) == 0) {
         showError(var+" is not defined");
         return false;
@@ -60,28 +74,43 @@ bool checkVariableExist (string var) {
     return true;
 }
 
-bool checkVariable (string const text) {
-    // cout << text << endl;
+string replaceLogic (const string logic) {
+    string upperLogic = logic;
+    transform(upperLogic.begin(), upperLogic.end(), upperLogic.begin(), ::toupper);
+    if (upperLogic == "OU" || upperLogic == "||") return "or";
+    if (upperLogic == "ET" || upperLogic == "&&") return "and";
+    if (upperLogic == "==") return "==";
+    
+}
+
+pair<bool,string> checkVariable (string const text) {
     smatch _sm;
+    const string originText = text;
     constexpr const char* delimiters = "+-><*/";
     char* tokenValue = strtok((char*)text.c_str(), delimiters);
     while (tokenValue != NULL) {
         string textVar = tokenValue;
         tokenValue = strtok(NULL, delimiters);
+        const string var = trimString(textVar, " ");
         if (regex_search(textVar, _sm, regex("^ *\"([^\"]*)\" *$"))) {
+            continue;
         } else {
-            const string var = trimString(textVar, " ");
             // cout << var << endl;
-            if (regex_match(var, regex("^[0-9]+$"))) return true;
-            if (regex_search(var, _sm, regLogic)) {
-                if (!checkVariable(_sm[2])) return false;
-                return checkVariable(_sm[1]);
+            if (regex_match(var, regex("^[0-9]+$"))) continue;
+            if (regex_search(var, _sm, regex("^(.*[^ ]) *("+regLogic+") *([^ ].*$)", regex_constants::icase))) {
+                if (!checkVariable(_sm[3]).first) return {false, ""};
+                string tempVar = _sm[1];
+                // cout << _sm[2] << " devient " << replaceLogic(_sm[2]) << endl;
+                // cout << "=> " << _sm[1].str()+" "+replaceLogic(_sm[2])+" "+_sm[3].str() << endl;
+                return {
+                    checkVariable(_sm[1]).first,
+                    checkVariable(_sm[1]).second+" "+replaceLogic(_sm[2])+" "+checkVariable(_sm[3]).second
+                };
             }
-            if (!checkVariableExist(var)) return false;
-            return true;
+            if (!checkVariableExist(var)) return {false, ""};
         }
     }
-    return true;
+    return {true, originText};
 }
 
 bool checkReading (string var) {
@@ -107,6 +136,7 @@ int main (int argc, char const *argv[]) {
     bool variablesDefining = false;
     bool started = false;
     bool finished = false;
+    pair<bool,string> newVar, newVar2;
     if (inputFile.is_open()) {
         while (inputFile) {
             noline++;
@@ -153,8 +183,9 @@ int main (int argc, char const *argv[]) {
                     switch (i) {
                     case Afficher:
                         // cout << sm[1] << endl;
-                        if (!checkVariable(sm[1])) exit(1);
-                        tempWrite = sm[1];
+                        newVar = checkVariable(sm[1]);
+                        if (!newVar.first) exit(1);
+                        tempWrite = newVar.second;
                         isWriting = true;
                         break;
                     
@@ -172,17 +203,19 @@ int main (int argc, char const *argv[]) {
 
                     case IfStatement:
                         // cout << "1" << endl;
-                        if (!checkVariable(sm[1])) exit(1);
+                        newVar = checkVariable(sm[1]);
+                        if (!newVar.first) exit(1);
                         // cout << "2" << endl;
                         outputFile << string(indent*indentSize, ' ');
-                        outputFile << "if " << sm[1] << ":" << endl;
+                        outputFile << "if " << newVar.second << ":" << endl;
                         indent += 1;
                         break;
 
                     case WhileLoop:
-                        if (!checkVariable(sm[1])) exit(1);
+                        newVar = checkVariable(sm[1]);
+                        if (!newVar.first) exit(1);
                         outputFile << string(indent*indentSize, ' ');
-                        outputFile << "while " << sm[1] << ":" << endl;
+                        outputFile << "while " << newVar.second << ":" << endl;
                         indent += 1;
                         break;
 
@@ -193,11 +226,13 @@ int main (int argc, char const *argv[]) {
                         
                     case ForLoop:
                         {
-                            if (!checkVariable(sm[1])) exit(1);
-                            if (!checkVariable(sm[2])) exit(1);
+                            newVar = checkVariable(sm[1]);
+                            if (!newVar.first) exit(1);
+                            newVar2 = checkVariable(sm[2]);
+                            if (!newVar2.first) exit(1);
                             bool toIsNum = false; try { stoi(sm[3]); toIsNum = true; } catch (invalid_argument e) {}
                             outputFile << string(indent*indentSize, ' ');
-                            outputFile << "for " << sm[1] << " in range(" << sm[2] << "," << (toIsNum ? to_string(stoi(sm[3])+1) : string(sm[3])+"+1") << "):" << endl;
+                            outputFile << "for " << newVar.second << " in range(" << newVar2.second << "," << (toIsNum ? to_string(stoi(sm[3])+1) : string(sm[3])+"+1") << "):" << endl;
                             indent += 1;
                         }
                         break;
