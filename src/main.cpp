@@ -113,13 +113,13 @@ pair<bool,string> checkVariable (string const text) {
     return {true, originText};
 }
 
-bool checkReading (string var) {
-    if (!checkVariableExist(var)) return false;
-    if (variables[var] != "Texte") {//! Can be modified
-        showError(var+": Can not convert "+variables[var]+" into Texte");
-        return false;
-    }
-    return true;
+string checkReading (const string var, const string msg) {
+    if (!checkVariableExist(var)) return "";
+    if (variables[var] == "Texte") return var+"=input("+msg+")";
+    if (variables[var] == "Entier") return var+"=int(input("+msg+"))";
+    if (variables[var] == "Réel") return var+"=float(input("+msg+"))";
+    showError(var+": Can not convert "+variables[var]+" into Texte");
+    return "";
 }
 
 int main (int argc, char const *argv[]) {
@@ -166,10 +166,10 @@ int main (int argc, char const *argv[]) {
             if (isWriting) {
                 isWriting = false;
                 outputFile << string(indent*indentSize, ' ');
-                if (regex_search(line, sm, regex("LIRE *(.+)", regex_constants::icase))) {
+                if (regex_search(line, sm, regex(validLines[Lire], regex_constants::icase))) {
                     // cout << tempWrite << endl;
-                    if (!checkReading(sm[1])) exit(1);
-                    outputFile << sm[1] << "=input(" << tempWrite << ")" << endl;
+                    outputFile << checkReading(sm[1], tempWrite) << endl;
+                    // outputFile << sm[1] << "=input(" << tempWrite << ")" << endl;
                     continue;
                 } else {
                     outputFile << "print(" << tempWrite << ")" << endl;
@@ -190,9 +190,9 @@ int main (int argc, char const *argv[]) {
                         break;
                     
                     case Lire:
-                        if (!checkReading(sm[1])) exit(1);
                         outputFile << string(indent*indentSize, ' ');
-                        outputFile << sm[1] << "=input('')" << endl;
+                        outputFile << checkReading(sm[1], "''") << endl;
+                        // outputFile << sm[1] << "=input('')" << endl;
                         break;
                     
                     case Arrow:
