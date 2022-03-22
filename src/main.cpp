@@ -97,7 +97,7 @@ pair<bool,string> checkVariable (string const text) {
         } else {
             // cout << var << endl;
             if (regex_match(var, regex("^[0-9]+$"))) continue;
-            if (regex_search(var, _sm, regex("^(.*[^ ]) *("+regLogic+") *([^ ].*$)", regex_constants::icase))) {
+            if (regex_search(var, _sm, regex("^(.*[^ ]) *("+regLogic+") *([^ ].*)$", regex_constants::icase))) {
                 if (!checkVariable(_sm[3]).first) return {false, ""};
                 string tempVar = _sm[1];
                 // cout << _sm[2] << " devient " << replaceLogic(_sm[2]) << endl;
