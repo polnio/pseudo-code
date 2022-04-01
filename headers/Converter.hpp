@@ -25,6 +25,8 @@ class Converter {
         virtual bool init (const std::string line);
         virtual bool write (const std::string line, const std::string tempWrite);
         virtual std::pair<bool, std::string> convert (const std::smatch sm, int type);
+        virtual std::string replaceIntegratedVar (const std::string var);
+        std::pair<bool, std::string> checkVariable (const std::string var);
 };
 
 

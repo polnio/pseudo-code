@@ -8,7 +8,9 @@ DEBUT
     LIRE name
     AFFICHER "Bonjour "+ name +" !"
 
-    SI name == "Po Co" OU False OU name == "polnio" ALORS
+    afficher longueur de name
+
+    SI name == "Po Co" OU faux OU name == "polnio" ALORS
         AFFICHER "Bienvenue a l'admin "+ name
     FIN SI
 
@@ -21,7 +23,7 @@ DEBUT
         AFFICHER i
     FINPOUR
 
-    pour i <- 1, current_year faire
+    pour i allant de 1 a current_year faire
         AFFICHER i*2
     fin pour
 FIN

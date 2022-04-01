@@ -53,9 +53,14 @@ void split_str (string const &str, const char delimiter, vector<string> &out) {
 }
 bool checkVariableExist (const string var/* , const map<string, string> &variables */) {
     for (size_t i = 0; i < sizeof(integratedVars)/sizeof(integratedVars[0]); i++){
-        string tempVar = var;
+        smatch sm;
+        /* string tempVar = var;
         transform(tempVar.begin(), tempVar.end(), tempVar.begin(), ::tolower);
-        if (tempVar == integratedVars[i]) return true;
+        if (tempVar == integratedVars[i]) return true; */
+        if (regex_search(var, sm, regex(integratedVars[i], regex_constants::icase))) {
+            if (i == 2) return checkVariableExist(sm[1]);
+            return true;
+        }
     }
     
     if (variables.count(var) == 0) {
@@ -71,35 +76,6 @@ string replaceLogic (const string logic) {
     if (upperLogic == "ET" || upperLogic == "&&") return "and";
     if (upperLogic == "==") return "==";
     
-}
-pair<bool,string> checkVariable (string const text) {
-    smatch _sm;
-    const string originText = text;
-    constexpr const char* delimiters = "+-><*/";
-    char* tokenValue = strtok((char*)text.c_str(), delimiters);
-    while (tokenValue != NULL) {
-        string textVar = tokenValue;
-        tokenValue = strtok(NULL, delimiters);
-        const string var = trimString(textVar, " ");
-        if (regex_search(textVar, _sm, regex("^ *\"([^\"]*)\" *$"))) {
-            continue;
-        } else {
-            // cout << var << endl;
-            if (regex_match(var, regex("^[0-9]+$"))) continue;
-            if (regex_search(var, _sm, regex("^(.*[^ ]) *("+regLogic+") *([^ ].*)$", regex_constants::icase))) {
-                if (!checkVariable(_sm[3]).first) return {false, ""};
-                string tempVar = _sm[1];
-                // cout << _sm[2] << " devient " << replaceLogic(_sm[2]) << endl;
-                // cout << "=> " << _sm[1].str()+" "+replaceLogic(_sm[2])+" "+_sm[3].str() << endl;
-                return {
-                    checkVariable(_sm[1]).first,
-                    checkVariable(_sm[1]).second+" "+replaceLogic(_sm[2])+" "+checkVariable(_sm[3]).second
-                };
-            }
-            if (!checkVariableExist(var)) return {false, ""};
-        }
-    }
-    return {true, originText};
 }
 string checkReading (const string var, const string msg) {
     if (!checkVariableExist(var)) return "";

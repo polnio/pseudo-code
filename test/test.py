@@ -1,6 +1,7 @@
 current_year=2022
 name=input("Quel est ton nom ? ")
 print("Bonjour "+ name +" !")
+print(len(name))
 if name == "Po Co" or False or name == "polnio":
   print("Bienvenue a l'admin "+ name)
 while current_year > 2020:

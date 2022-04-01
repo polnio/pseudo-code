@@ -3,6 +3,7 @@
 #include <fstream>
 #include <PyConverter.hpp>
 #include <regex>
+#include <map>
 #include <constants.hpp>
 
 using namespace std;
@@ -28,9 +29,12 @@ pair<bool, string> PyConverter::convert(const smatch sm, int type) {
             break;
 
         case Arrow:
-            if (!checkVariableExist(sm[1])) exit(1);
+            newVar = checkVariable(sm[1]);
+            if (!newVar.first) exit(1);
+            newVar2 = checkVariable(sm[2]);
+            if (!newVar2.first) exit(1);
             outputFile << string(indent*indentSize, ' ');
-            outputFile << sm[1] << "=" << sm[2] << endl;
+            outputFile << newVar.second << "=" << newVar2.second << endl;
             break;
 
         case IfStatement:
@@ -57,7 +61,7 @@ pair<bool, string> PyConverter::convert(const smatch sm, int type) {
             break;
             
         case ForLoop:
-            {
+        case VerboseForLoop: {
                 newVar = checkVariable(sm[1]);
                 if (!newVar.first) exit(1);
                 newVar2 = checkVariable(sm[2]);
@@ -79,6 +83,22 @@ pair<bool, string> PyConverter::convert(const smatch sm, int type) {
             break;
     }
     return { false, ""};
+}
+
+string PyConverter::replaceIntegratedVar (const string var) {
+    smatch sm;
+    for (size_t i = 0; i < sizeof(integratedVars)/sizeof(integratedVars[0]); i++) {
+        if (regex_search(var, sm, regex(integratedVars[i], regex_constants::icase))) {
+            switch (i) {
+                case TRUE     : return "True";
+                case FALSE    : return "False";
+                case LENGTH_OF: return "len("+string(sm[1])+")";
+                default: break;
+            }
+            // if (i == 2) return checkVariableExist(sm[1]);
+        }
+    }
+    return var;
 }
 
 bool PyConverter::init (const string line) {
