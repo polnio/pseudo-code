@@ -11,10 +11,10 @@ using namespace std;
 
 // map<string, string> variables;
 // int noline = 0;
-smatch sm;
 enum logicsEnum {OU, OUSYM, ET, ETSYM, EQEQ};
 
 int main (int argc, char const *argv[]) {
+    smatch sm;
     int opt = 0;
     string const outputFileName = getCmdOption(argv, argv+argc, "-o");
     short indentSize = stoi(getCmdOption(argv, argv+argc, "-indent"));
@@ -34,7 +34,9 @@ int main (int argc, char const *argv[]) {
         while (inputFile) {
             // noline++;
             indentNoline();
+            // cout << getNoline() << " ";
             getline(inputFile, line);
+            // cout << line << endl;
             if (line == "") continue;
 
             converter.init(line);

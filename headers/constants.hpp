@@ -6,7 +6,7 @@
 #include <map>
 #include <vector>
 
-enum OutLines { Afficher, Lire, Arrow, IfStatement, EndIf, WhileLoop, EndWhileLoop, DoWhileLoop, EndDoWhileLoop, ForLoop, VerboseForLoop, EndForLoop };
+enum OutLines { Afficher, Lire, Arrow, IfStatement, EndIf, WhileLoop, EndWhileLoop, DoWhileLoop, EndDoWhileLoop, ForLoop, VerboseForLoop, ForEachLoop, EndForLoop };
 const std::string validLines[] = {
     "AFFICHER +(.+)",
     "LIRE +(.+)",
@@ -19,13 +19,14 @@ const std::string validLines[] = {
     "JUSQU'[AÀ] +(.+)",
     "POUR +([^ ]+) *<- *([^ ,]+) *, *([^ ]+) +FAIRE",
     "POUR +([^ ]+) +ALLANT *DE +([^ ]+) +[AÀ] +([^ ]+) +FAIRE",
+    "POUR *CHAQUE +([^ ]+) +DANS +([^ ]+) +FAIRE",
     "FIN *POUR"
 };
 const std::string integratedVars[] = {"vrai", "faux", "longueur *de *([^ ].*)"};
 enum IntegratedVars { TRUE, FALSE, LENGTH_OF };
 const std::string regLogic = "OU|\\|\\||ET|&&|==";
 const std::string logics[] = {"OU", "||", "ET", "&&", "=="};
-const std::string regValidTypes = "Bool(?:ean)?|Texte?|Entier|R[ée]el";
+const std::string regValidTypes = "Bool(?:[ée]en)?|Texte|Entier|R[ée]el|Liste";
 
 void showError(const std::string error);
 char *getCmdOption(const char **begin, const char **end, const std::string &option);
@@ -34,10 +35,11 @@ std::string trimString(std::string str, std::string chars);
 bool replace(std::string &str, const std::string &from, const std::string &to);
 void split_str(std::string const &str, const char delimiter, std::vector<std::string> &out);
 bool checkVariableExist(const std::string var /* , const std::map<std::string, std::string> &variables */);
-std::string replaceLogic(const std::string logic);
+std::string replaceLogic (const std::string logic);
 // std::pair<bool, std::string> checkVariable(std::string const text);
-std::string checkReading(const std::string var, const std::string msg);
+// std::string checkReading(const std::string var, const std::string msg);
 void insertVariable(const std::string var, const std::string type);
+std::string getVariableType(const std::string var);
 void indentNoline();
 int getNoline();
 #endif // CONSTANTS_HPP_INCLUDED

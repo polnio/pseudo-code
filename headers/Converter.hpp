@@ -22,12 +22,12 @@ class Converter {
         virtual ~Converter ();
         bool isVariablesDefining ();
         bool isStarted ();
+        std::pair<bool, std::string> checkVariable (const std::string var);
+        std::string checkReading(const std::string var, const std::string msg);
         virtual bool init (const std::string line);
         virtual bool write (const std::string line, const std::string tempWrite);
         virtual std::pair<bool, std::string> convert (const std::smatch sm, int type);
         virtual std::string replaceIntegratedVar (const std::string var);
-        std::pair<bool, std::string> checkVariable (const std::string var);
 };
-
 
 #endif // CONVERTER_HPP_INCLUDED

@@ -43,6 +43,18 @@ pair<bool,string> Converter::checkVariable (string const text) {
         } else {
             // cout << var << endl;
             if (regex_match(var, regex("^[0-9]+$"))) continue;
+            if (regex_search(var, _sm, regex("^\\[ *([^,]+(?:, *[^,]+)*)? *\\]$"))) {
+                vector<string> elements;
+                split_str(_sm[1], ',', elements);
+                string r = "[";
+                for (auto element : elements) {
+                    const auto newVar = checkVariable(element);
+                    if (!newVar.first) return {false, ""};
+                    r += newVar.second+",";
+                }
+                r = trimString(r, ",") + "]";
+                return {true, r};
+            }
             if (regex_search(var, _sm, regex("^(.*[^ ]) *("+regLogic+") *([^ ].*)$", regex_constants::icase))) {
                 if (!checkVariable(_sm[3]).first) return {false, ""};
                 string tempVar = _sm[1];
@@ -57,4 +69,13 @@ pair<bool,string> Converter::checkVariable (string const text) {
         }
     }
     return {true, replaceIntegratedVar(originText)};
+}
+
+string Converter::checkReading (const string var, const string msg) {
+    if (!checkVariableExist(var)) return "";
+    if (getVariableType(var) == "Texte") return var+"=input("+msg+")";
+    if (getVariableType(var) == "Entier") return var+"=int(input("+msg+"))";
+    if (getVariableType(var) == "Réel") return var+"=float(input("+msg+"))";
+    showError(var+": Can not convert "+getVariableType(var)+" into Texte");
+    return "";
 }

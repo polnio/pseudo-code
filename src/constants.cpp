@@ -77,16 +77,11 @@ string replaceLogic (const string logic) {
     if (upperLogic == "==") return "==";
     
 }
-string checkReading (const string var, const string msg) {
-    if (!checkVariableExist(var)) return "";
-    if (variables[var] == "Texte") return var+"=input("+msg+")";
-    if (variables[var] == "Entier") return var+"=int(input("+msg+"))";
-    if (variables[var] == "Réel") return var+"=float(input("+msg+"))";
-    showError(var+": Can not convert "+variables[var]+" into Texte");
-    return "";
-}
 void insertVariable (const string var, const string type) {
     variables.insert(pair<string,string>(var, type));
+}
+string getVariableType (const string var) {
+    return variables[var];
 }
 void indentNoline () { ++noline; }
 int getNoline () { return noline; }

@@ -12,7 +12,7 @@ PyConverter::PyConverter (string outputFileName, short _indentSize):
     Converter(outputFileName, _indentSize) {}
 
 pair<bool, string> PyConverter::convert(const smatch sm, int type) {
-    pair<bool,string> newVar, newVar2;
+    pair<bool,string> newVar, newVar2, newVar3;
     // const smatch sm;
     switch (type) {
         case Afficher:
@@ -62,15 +62,27 @@ pair<bool, string> PyConverter::convert(const smatch sm, int type) {
             
         case ForLoop:
         case VerboseForLoop: {
-                newVar = checkVariable(sm[1]);
-                if (!newVar.first) exit(1);
-                newVar2 = checkVariable(sm[2]);
-                if (!newVar2.first) exit(1);
-                bool toIsNum = false; try { stoi(sm[3]); toIsNum = true; } catch (invalid_argument e) {}
-                outputFile << string(indent*indentSize, ' ');
-                outputFile << "for " << newVar.second << " in range(" << newVar2.second << "," << (toIsNum ? to_string(stoi(sm[3])+1) : string(sm[3])+"+1") << "):" << endl;
-                indent += 1;
-            }
+            newVar = checkVariable(sm[1]);
+            if (!newVar.first) exit(1);
+            newVar2 = checkVariable(sm[2]);
+            if (!newVar2.first) exit(1);
+            newVar3 = checkVariable(sm[3]);
+            if (!newVar3.first) exit(1);
+            bool toIsNum = false; try { stoi(newVar3.second); toIsNum = true; } catch (invalid_argument e) {}
+            outputFile << string(indent*indentSize, ' ');
+            outputFile << "for " << newVar.second << " in range(" << newVar2.second << "," << (toIsNum ? to_string(stoi(newVar3.second)+1) : newVar3.second+"+1") << "):" << endl;
+            indent += 1;
+            break;
+        }
+        
+        case ForEachLoop:
+            newVar = checkVariable(sm[1]);
+            if (!newVar.first) exit(1);
+            newVar2 = checkVariable(sm[2]);
+            if (!newVar2.first) exit(1);
+            outputFile << string(indent*indentSize, ' ');
+            outputFile << "for " << newVar.second << " in " << newVar2.second << ":" << endl;
+            indent += 1;
             break;
 
         case EndIf:
@@ -112,11 +124,15 @@ bool PyConverter::init (const string line) {
             if (regex_search(line, sm, regex("DEBUT", regex_constants::icase))) {
                 started = true;
             } else {
-                regex_search(line, sm, regex("([^, ]+)(?:, +([^,]+))*: *(Entier|Texte)", regex_constants::icase));
-                for (int i = 1; i < sm.size() - 1; i++) {
+                regex_search(line, sm, regex("([^, ]+(?:, +[^,]+)*): *("+regValidTypes+")", regex_constants::icase));
+                vector<string> vars;
+                split_str(sm[1], ',', vars);
+                // for (int i = 1; i < sm.size() - 1; i++) {
+                for (auto var : vars) {
+                
                     // cout << sm[i] << " : " << sm[sm.size() - 1] << endl;
                     // variables.insert(pair<string,string>(sm[i], sm[sm.size()-1]));
-                    insertVariable(sm[i], sm[sm.size()-1]);
+                    insertVariable(trimString(var, " "), sm[sm.size()-1]);
                 }
             }
         }

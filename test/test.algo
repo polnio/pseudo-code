@@ -1,14 +1,15 @@
 VARIABLE
-    current_year, i: Entier
+    current_year, i, element: Entier
     name: Texte
-
+    myList: Liste
 DEBUT
     current_year <- 2022
     AFFICHER "Quel est ton nom ? "
     LIRE name
     AFFICHER "Bonjour "+ name +" !"
 
-    afficher longueur de name
+    myList <- [3, 5, longueur de name]
+    afficher longueur de myList
 
     SI name == "Po Co" OU faux OU name == "polnio" ALORS
         AFFICHER "Bienvenue a l'admin "+ name
@@ -26,4 +27,8 @@ DEBUT
     pour i allant de 1 a current_year faire
         AFFICHER i*2
     fin pour
+
+    pour chaque element dans myList faire
+        afficher element
+    finpour
 FIN
